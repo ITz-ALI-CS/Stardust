@@ -1,0 +1,3379 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>✨ STARDUST — Born Under the Stars. Made of the Stars.</title>
+    <meta
+      name="description"
+      content="Generate your true birth night sky, calculate your age across the solar system, become a galaxy of glowing stars with your webcam, and compare cosmic charts with friends."
+    />
+    <meta name="theme-color" content="#030712" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Orbitron:wght@400;600;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* ==========================================================================
+       RESET & ROOT VARIABLES
+       ========================================================================== */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      :root {
+        --bg-void: #030712;
+        --bg-space: #070d1e;
+        --bg-card: rgba(13, 22, 44, 0.65);
+        --border-starlight: rgba(147, 197, 253, 0.15);
+        --border-active: rgba(0, 245, 212, 0.5);
+        --cyan-glow: #00f5d4;
+        --purple-nebula: #9d4edd;
+        --pink-quasar: #f72585;
+        --gold-starlight: #ffd166;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --text-dim: #64748b;
+        --font-display: "Cinzel", serif;
+        --font-tech: "Orbitron", monospace;
+        --font-body: "Plus Jakarta Sans", sans-serif;
+        --glow-sm: 0 0 15px rgba(0, 245, 212, 0.35);
+      }
+
+      /* Hide standard browser scrollbars completely */
+      html {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        scroll-behavior: smooth;
+      }
+      body::-webkit-scrollbar {
+        display: none;
+      }
+
+      body {
+        background-color: var(--bg-void);
+        color: var(--text-main);
+        font-family: var(--font-body);
+        min-height: 100vh;
+        overflow-x: hidden;
+        position: relative;
+      }
+
+      /* Ambient Canvas */
+      #space-dust-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.85;
+      }
+
+      /* Nebula Background Flares */
+      .nebula-glow {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(140px);
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.28;
+        animation: pulseNebula 18s ease-in-out infinite alternate;
+      }
+      .nebula-1 {
+        top: -10vw;
+        left: -10vw;
+        width: 55vw;
+        height: 55vw;
+        background: radial-gradient(
+          circle,
+          var(--purple-nebula),
+          transparent 70%
+        );
+      }
+      .nebula-2 {
+        bottom: 5vw;
+        right: -10vw;
+        width: 60vw;
+        height: 60vw;
+        background: radial-gradient(circle, var(--cyan-glow), transparent 70%);
+        animation-delay: -9s;
+      }
+
+      @keyframes pulseNebula {
+        0% {
+          transform: scale(1);
+          opacity: 0.2;
+        }
+        50% {
+          transform: scale(1.15) translate(30px, -20px);
+          opacity: 0.32;
+        }
+        100% {
+          transform: scale(0.95);
+          opacity: 0.22;
+        }
+      }
+
+      /* ==========================================================================
+       CUSTOM ANIMATED CELESTIAL SCROLL SYSTEM
+       ========================================================================== */
+      .celestial-rail {
+        position: fixed;
+        right: 24px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        z-index: 100;
+      }
+
+      .rail-track {
+        position: absolute;
+        top: 10px;
+        bottom: 10px;
+        width: 2px;
+        background: linear-gradient(
+          to bottom,
+          transparent,
+          rgba(157, 78, 221, 0.4),
+          rgba(0, 245, 212, 0.6),
+          transparent
+        );
+        z-index: -1;
+      }
+
+      .rail-meteor {
+        position: absolute;
+        width: 6px;
+        height: 24px;
+        border-radius: 999px;
+        background: linear-gradient(to bottom, #fff, var(--cyan-glow));
+        box-shadow:
+          0 0 14px var(--cyan-glow),
+          0 0 25px #fff;
+        transform: translateX(-2px);
+        transition: top 0.15s ease-out;
+        pointer-events: none;
+      }
+
+      .rail-node {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--bg-space);
+        border: 2px solid var(--border-starlight);
+        cursor: pointer;
+        position: relative;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .rail-node::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        right: 28px;
+        top: 50%;
+        transform: translateY(-50%) translateX(10px);
+        padding: 5px 12px;
+        background: rgba(7, 13, 30, 0.9);
+        border: 1px solid var(--border-active);
+        border-radius: 6px;
+        font-size: 0.72rem;
+        font-family: var(--font-tech);
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.25s ease;
+        color: var(--cyan-glow);
+        backdrop-filter: blur(10px);
+      }
+      .rail-node:hover::after {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+      }
+      .rail-node:hover,
+      .rail-node.active {
+        border-color: var(--cyan-glow);
+        background: var(--cyan-glow);
+        box-shadow: 0 0 15px var(--cyan-glow);
+        transform: scale(1.3);
+      }
+
+      /* Cosmic Header */
+      header.cosmic-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        padding: 18px 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 90;
+        backdrop-filter: blur(16px);
+        background: rgba(3, 7, 18, 0.55);
+        border-bottom: 1px solid var(--border-starlight);
+      }
+
+      .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+      }
+      .logo-icon {
+        font-size: 1.6rem;
+        filter: drop-shadow(0 0 10px var(--gold-starlight));
+        animation: spinSlow 30s linear infinite;
+      }
+      @keyframes spinSlow {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .logo-title {
+        font-family: var(--font-tech);
+        font-size: 1.35rem;
+        font-weight: 900;
+        letter-spacing: 0.18em;
+        background: linear-gradient(
+          135deg,
+          #fff 20%,
+          var(--cyan-glow) 60%,
+          var(--purple-nebula) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .sound-toggle-btn {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid var(--border-starlight);
+        border-radius: 999px;
+        padding: 8px 16px;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        font-family: var(--font-tech);
+        cursor: pointer;
+        transition: all 0.25s ease;
+      }
+      .sound-toggle-btn:hover {
+        border-color: var(--cyan-glow);
+        box-shadow: var(--glow-sm);
+      }
+      .sound-waves {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        height: 14px;
+      }
+      .sound-bar {
+        width: 3px;
+        height: 4px;
+        background: var(--cyan-glow);
+        border-radius: 2px;
+      }
+      .sound-playing .sound-bar:nth-child(1) {
+        animation: wave 0.8s ease-in-out infinite;
+      }
+      .sound-playing .sound-bar:nth-child(2) {
+        animation: wave 0.6s 0.2s ease-in-out infinite;
+      }
+      .sound-playing .sound-bar:nth-child(3) {
+        animation: wave 1s 0.4s ease-in-out infinite;
+      }
+      @keyframes wave {
+        0%,
+        100% {
+          height: 4px;
+        }
+        50% {
+          height: 14px;
+        }
+      }
+
+      /* Container Layout */
+      main {
+        position: relative;
+        z-index: 10;
+        max-width: 1300px;
+        margin: 0 auto;
+        padding: 100px 30px 60px;
+      }
+
+      section {
+        min-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        margin-bottom: 120px;
+        scroll-margin-top: 100px;
+      }
+
+      /* Glass Cards */
+      .glass-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-starlight);
+        border-radius: 24px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        position: relative;
+      }
+
+      .section-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-tech);
+        font-size: 0.8rem;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--cyan-glow);
+        margin-bottom: 12px;
+      }
+      .section-tag::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--cyan-glow);
+        box-shadow: 0 0 10px var(--cyan-glow);
+      }
+
+      .section-heading {
+        font-family: var(--font-display);
+        font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+        font-weight: 700;
+        line-height: 1.15;
+        margin-bottom: 18px;
+        background: linear-gradient(
+          135deg,
+          #ffffff 40%,
+          #e2e8f0 70%,
+          var(--gold-starlight) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .section-subtitle {
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        max-width: 680px;
+        line-height: 1.6;
+        margin-bottom: 35px;
+      }
+
+      /* Cosmic Buttons */
+      .btn-cosmic {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 14px 28px;
+        border-radius: 999px;
+        font-family: var(--font-tech);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: none;
+        outline: none;
+        text-decoration: none;
+      }
+      .btn-cosmic-primary {
+        background: linear-gradient(
+          135deg,
+          var(--cyan-glow),
+          var(--purple-nebula)
+        );
+        color: #030712;
+        box-shadow: 0 0 25px rgba(0, 245, 212, 0.4);
+      }
+      .btn-cosmic-primary:hover {
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 0 40px rgba(157, 78, 221, 0.6);
+        color: #fff;
+      }
+      .btn-cosmic-secondary {
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid var(--border-starlight);
+        color: var(--text-main);
+      }
+      .btn-cosmic-secondary:hover {
+        border-color: var(--cyan-glow);
+        box-shadow: var(--glow-sm);
+        transform: translateY(-2px);
+      }
+
+      /* Hero */
+      .hero-section {
+        text-align: center;
+        align-items: center;
+        padding-top: 40px;
+      }
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 18px;
+        border-radius: 999px;
+        background: rgba(157, 78, 221, 0.15);
+        border: 1px solid rgba(157, 78, 221, 0.35);
+        color: #e0aaff;
+        font-family: var(--font-tech);
+        font-size: 0.75rem;
+        letter-spacing: 0.18em;
+        margin-bottom: 24px;
+      }
+      .hero-title {
+        font-family: var(--font-display);
+        font-size: clamp(3rem, 7.5vw, 6.2rem);
+        font-weight: 900;
+        line-height: 1.05;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+        background: linear-gradient(
+          135deg,
+          #ffffff 10%,
+          #d8b4fe 45%,
+          var(--cyan-glow) 75%,
+          var(--gold-starlight) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 0 35px rgba(157, 78, 221, 0.35));
+      }
+      .hero-quote {
+        font-size: clamp(1.1rem, 2.2vw, 1.45rem);
+        font-style: italic;
+        color: var(--text-muted);
+        max-width: 760px;
+        margin: 0 auto 35px;
+        font-weight: 300;
+      }
+      .hero-quote span {
+        color: var(--gold-starlight);
+        font-weight: 500;
+      }
+
+      /* Inputs */
+      .birth-input-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        width: 100%;
+        max-width: 900px;
+        padding: 24px;
+        margin: 0 auto 25px;
+        background: rgba(10, 17, 36, 0.7);
+        border: 1px solid var(--border-starlight);
+        border-radius: 20px;
+        backdrop-filter: blur(25px);
+      }
+      .input-group {
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .input-label {
+        font-family: var(--font-tech);
+        font-size: 0.72rem;
+        letter-spacing: 0.15em;
+        color: var(--cyan-glow);
+        text-transform: uppercase;
+      }
+      .input-field {
+        width: 100%;
+        background: rgba(3, 7, 18, 0.65);
+        border: 1px solid rgba(147, 197, 253, 0.2);
+        border-radius: 12px;
+        padding: 12px 16px;
+        color: #fff;
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.25s ease;
+      }
+      .input-field:focus {
+        border-color: var(--cyan-glow);
+        box-shadow: 0 0 15px rgba(0, 245, 212, 0.25);
+      }
+
+      /* Observatory */
+      .observatory-layout {
+        display: grid;
+        grid-template-columns: 1.25fr 1fr;
+        gap: 30px;
+        align-items: start;
+      }
+      @media (max-width: 992px) {
+        .observatory-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .skydome-container {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+      }
+      .skydome-canvas-wrapper {
+        position: relative;
+        width: 100%;
+        max-width: 520px;
+        aspect-ratio: 1 / 1;
+        border-radius: 50%;
+        box-shadow:
+          0 0 50px rgba(0, 245, 212, 0.15),
+          inset 0 0 50px rgba(3, 7, 18, 0.9);
+        background: radial-gradient(circle, #0b1435 0%, #030712 90%);
+        border: 2px solid rgba(0, 245, 212, 0.35);
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      #sky-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        cursor: crosshair;
+      }
+      .cardinal-label {
+        position: absolute;
+        font-family: var(--font-tech);
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--cyan-glow);
+        pointer-events: none;
+        text-shadow: 0 0 8px rgba(0, 245, 212, 0.6);
+      }
+      .cardinal-n {
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .cardinal-s {
+        bottom: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .cardinal-e {
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      .cardinal-w {
+        left: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .scrubber-panel {
+        width: 100%;
+        background: rgba(6, 11, 26, 0.7);
+        border: 1px solid var(--border-starlight);
+        border-radius: 16px;
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .scrubber-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: var(--font-tech);
+        font-size: 0.78rem;
+      }
+      .scrubber-slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 6px;
+        border-radius: 4px;
+        background: linear-gradient(to right, #00f5d4, #9d4edd, #f72585);
+        outline: none;
+        cursor: pointer;
+      }
+      .scrubber-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 3px solid var(--purple-nebula);
+        box-shadow: 0 0 15px var(--cyan-glow);
+        cursor: ew-resize;
+      }
+
+      #star-tooltip {
+        position: absolute;
+        padding: 8px 14px;
+        background: rgba(3, 7, 18, 0.92);
+        border: 1px solid var(--cyan-glow);
+        border-radius: 8px;
+        font-size: 0.78rem;
+        pointer-events: none;
+        opacity: 0;
+        transform: translate(-50%, -120%);
+        transition: opacity 0.2s ease;
+        z-index: 50;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8);
+        white-space: nowrap;
+      }
+
+      /* Observatory Data */
+      .observatory-data {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .moon-phase-card {
+        padding: 22px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+      .moon-canvas-container {
+        width: 90px;
+        height: 90px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.2);
+      }
+      #moon-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .moon-info-title {
+        font-family: var(--font-tech);
+        font-size: 0.72rem;
+        letter-spacing: 0.18em;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .moon-phase-name {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 6px;
+      }
+      .moon-illumination {
+        font-size: 0.88rem;
+        color: var(--cyan-glow);
+        font-family: var(--font-tech);
+      }
+
+      .light-star-card {
+        padding: 24px;
+        border: 1px solid rgba(255, 209, 102, 0.35);
+        background: linear-gradient(
+          135deg,
+          rgba(255, 209, 102, 0.05) 0%,
+          rgba(13, 22, 44, 0.7) 100%
+        );
+      }
+      .light-star-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .star-sparkle-icon {
+        font-size: 1.4rem;
+        color: var(--gold-starlight);
+      }
+      .light-star-name {
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--gold-starlight);
+      }
+      .light-star-desc {
+        font-size: 0.92rem;
+        line-height: 1.6;
+        color: #e2e8f0;
+      }
+
+      .planets-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+      @media (max-width: 600px) {
+        .planets-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .planet-card {
+        padding: 16px;
+        background: rgba(6, 11, 26, 0.7);
+        border: 1px solid var(--border-starlight);
+        border-radius: 16px;
+        text-align: center;
+      }
+      .planet-icon {
+        font-size: 1.5rem;
+        margin-bottom: 6px;
+        display: inline-block;
+      }
+      .planet-name {
+        font-family: var(--font-tech);
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .planet-age-value {
+        font-family: var(--font-tech);
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #fff;
+      }
+
+      .live-counters-card {
+        padding: 22px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 20px;
+      }
+      .live-counter-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .live-counter-label {
+        font-family: var(--font-tech);
+        font-size: 0.72rem;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        text-transform: uppercase;
+      }
+      .live-counter-val {
+        font-family: var(--font-tech);
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--cyan-glow);
+      }
+      .pulse-heart {
+        display: inline-block;
+        color: var(--pink-quasar);
+        animation: heartbeat 1.2s ease-in-out infinite;
+      }
+      @keyframes heartbeat {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        15% {
+          transform: scale(1.3);
+        }
+        30% {
+          transform: scale(1);
+        }
+        45% {
+          transform: scale(1.2);
+        }
+      }
+
+      .next-bdays-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      @media (max-width: 500px) {
+        .next-bdays-row {
+          grid-template-columns: 1fr;
+        }
+      }
+      .bday-timer-card {
+        padding: 16px;
+        border-radius: 14px;
+        background: rgba(10, 18, 38, 0.6);
+        border: 1px solid var(--border-starlight);
+      }
+      .bday-timer-title {
+        font-family: var(--font-tech);
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        margin-bottom: 4px;
+        text-transform: uppercase;
+      }
+      .bday-timer-val {
+        font-family: var(--font-tech);
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #fff;
+      }
+
+      /* Be The Galaxy */
+      .galaxy-interface {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 24px;
+        align-items: start;
+      }
+      @media (max-width: 1024px) {
+        .galaxy-interface {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .galaxy-viewport-card {
+        position: relative;
+        width: 100%;
+        height: 600px;
+        background: #02040a;
+        border-radius: 24px;
+        border: 1px solid var(--border-active);
+        overflow: hidden;
+        box-shadow: 0 0 60px rgba(0, 245, 212, 0.2);
+      }
+      #galaxy-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        cursor: grab;
+      }
+      #galaxy-canvas:active {
+        cursor: grabbing;
+      }
+
+      #webcam-video,
+      #proc-canvas {
+        display: none;
+      }
+
+      .privacy-badge {
+        position: absolute;
+        top: 18px;
+        left: 18px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: rgba(3, 7, 18, 0.85);
+        border: 1px solid rgba(0, 245, 212, 0.35);
+        font-family: var(--font-tech);
+        font-size: 0.72rem;
+        color: var(--cyan-glow);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        backdrop-filter: blur(10px);
+        z-index: 10;
+      }
+      .privacy-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 8px #10b981;
+      }
+
+      .galaxy-hud {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        pointer-events: none;
+        z-index: 10;
+      }
+      .hud-gesture-badge {
+        padding: 10px 18px;
+        border-radius: 12px;
+        background: rgba(3, 7, 18, 0.85);
+        border: 1px solid var(--border-starlight);
+        font-family: var(--font-tech);
+        font-size: 0.85rem;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        backdrop-filter: blur(12px);
+      }
+      .hud-gesture-badge span {
+        color: var(--gold-starlight);
+        font-weight: 700;
+      }
+
+      .galaxy-controls-panel {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .control-title {
+        font-family: var(--font-tech);
+        font-size: 0.75rem;
+        letter-spacing: 0.15em;
+        color: var(--cyan-glow);
+        text-transform: uppercase;
+      }
+
+      .gesture-triggers {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .btn-gesture {
+        padding: 10px;
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid var(--border-starlight);
+        color: #fff;
+        font-family: var(--font-tech);
+        font-size: 0.75rem;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+      }
+      .btn-gesture:hover {
+        border-color: var(--cyan-glow);
+        background: rgba(0, 245, 212, 0.15);
+        box-shadow: var(--glow-sm);
+      }
+      .btn-gesture span.icon {
+        font-size: 1.25rem;
+      }
+
+      .mode-switch-container {
+        display: flex;
+        background: rgba(3, 7, 18, 0.7);
+        padding: 4px;
+        border-radius: 12px;
+        border: 1px solid var(--border-starlight);
+      }
+      .mode-switch-btn {
+        flex: 1;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-family: var(--font-tech);
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .mode-switch-btn.active {
+        background: var(--purple-nebula);
+        color: #fff;
+      }
+
+      .capture-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .btn-record {
+        background: linear-gradient(135deg, #ef4444, #f72585);
+        color: #fff;
+      }
+      .btn-record.recording {
+        animation: pulseRecord 1s infinite alternate;
+      }
+      @keyframes pulseRecord {
+        from {
+          box-shadow: 0 0 15px #ef4444;
+        }
+        to {
+          box-shadow: 0 0 35px #ef4444;
+          transform: scale(1.02);
+        }
+      }
+
+      /* Friend Match */
+      .match-card {
+        padding: 36px;
+      }
+      .match-inputs-grid {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 24px;
+        align-items: center;
+        margin-bottom: 30px;
+      }
+      @media (max-width: 768px) {
+        .match-inputs-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .match-divider {
+        font-family: var(--font-tech);
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: var(--gold-starlight);
+        text-align: center;
+      }
+      .match-result-view {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr 1fr;
+        gap: 20px;
+        align-items: center;
+        padding: 30px;
+        border-radius: 20px;
+        background: rgba(6, 11, 26, 0.7);
+        border: 1px solid var(--border-starlight);
+      }
+      @media (max-width: 900px) {
+        .match-result-view {
+          grid-template-columns: 1fr;
+          text-align: center;
+        }
+      }
+      .match-person-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .match-avatar-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 2px solid var(--cyan-glow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        background: radial-gradient(circle, #1a234a, #030712);
+      }
+      .match-score-badge {
+        text-align: center;
+        padding: 20px;
+        border-radius: 18px;
+        background: radial-gradient(
+          circle,
+          rgba(157, 78, 221, 0.25),
+          transparent
+        );
+        border: 1px solid rgba(157, 78, 221, 0.5);
+      }
+      .match-score-num {
+        font-family: var(--font-tech);
+        font-size: 3rem;
+        font-weight: 900;
+        color: var(--gold-starlight);
+        text-shadow: 0 0 25px rgba(255, 209, 102, 0.5);
+      }
+      .match-score-text {
+        font-family: var(--font-tech);
+        font-size: 0.8rem;
+        letter-spacing: 0.15em;
+        color: var(--cyan-glow);
+        text-transform: uppercase;
+        margin-top: 4px;
+      }
+
+      .match-details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+      .match-detail-box {
+        padding: 16px;
+        background: rgba(3, 7, 18, 0.6);
+        border-radius: 14px;
+        border: 1px solid var(--border-starlight);
+      }
+      .match-detail-box h4 {
+        font-family: var(--font-tech);
+        font-size: 0.72rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .match-detail-box p {
+        font-size: 0.95rem;
+        color: #fff;
+        font-weight: 600;
+      }
+
+      /* Share Section */
+      .share-section-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        align-items: center;
+      }
+      @media (max-width: 900px) {
+        .share-section-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .share-card-preview-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .share-canvas-card {
+        width: 100%;
+        max-width: 420px;
+        border-radius: 20px;
+        border: 2px solid rgba(255, 209, 102, 0.4);
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);
+        overflow: hidden;
+        background: #000;
+      }
+      #share-card-canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      .share-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .share-link-box {
+        display: flex;
+        gap: 10px;
+        background: rgba(3, 7, 18, 0.8);
+        border: 1px solid var(--border-starlight);
+        border-radius: 14px;
+        padding: 8px 12px;
+        align-items: center;
+      }
+      .share-link-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--cyan-glow);
+        font-family: var(--font-tech);
+        font-size: 0.8rem;
+      }
+
+      #cosmic-toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        padding: 14px 28px;
+        background: rgba(3, 7, 18, 0.95);
+        border: 1px solid var(--cyan-glow);
+        border-radius: 999px;
+        color: #fff;
+        font-family: var(--font-tech);
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        box-shadow: 0 10px 40px rgba(0, 245, 212, 0.4);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      #cosmic-toast.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+
+      footer {
+        border-top: 1px solid var(--border-starlight);
+        padding: 40px 30px;
+        text-align: center;
+        position: relative;
+        z-index: 10;
+        font-size: 0.85rem;
+        color: var(--text-dim);
+      }
+
+      @media (max-width: 768px) {
+        .celestial-rail {
+          display: none;
+        }
+        header.cosmic-header {
+          padding: 14px 20px;
+        }
+        main {
+          padding: 80px 16px 40px;
+        }
+        .galaxy-viewport-card {
+          height: 440px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Ambient Dust Canvas -->
+    <canvas id="space-dust-canvas"></canvas>
+
+    <!-- Atmospheric Glow Nebulas -->
+    <div class="nebula-glow nebula-1"></div>
+    <div class="nebula-glow nebula-2"></div>
+
+    <!-- Custom Animated Celestial Rail (Replaces default scrollbar) -->
+    <aside
+      class="celestial-rail"
+      id="celestial-rail"
+      aria-label="Celestial Navigator"
+    >
+      <div class="rail-track"></div>
+      <div class="rail-meteor" id="rail-meteor"></div>
+      <div
+        class="rail-node active"
+        data-section="hero"
+        data-tooltip="✦ Origin"
+      ></div>
+      <div
+        class="rail-node"
+        data-section="birth-sky"
+        data-tooltip="🔭 Birth Sky"
+      ></div>
+      <div
+        class="rail-node"
+        data-section="galaxy"
+        data-tooltip="🌌 Be The Galaxy"
+      ></div>
+      <div
+        class="rail-node"
+        data-section="friend-match"
+        data-tooltip="✨ Friend Match"
+      ></div>
+      <div
+        class="rail-node"
+        data-section="share-card"
+        data-tooltip="📜 Cosmic Pass"
+      ></div>
+    </aside>
+
+    <!-- Cosmic Top Navigation Bar -->
+    <header class="cosmic-header">
+      <div class="logo-container" onclick="scrollToSection('hero')">
+        <span class="logo-icon">✨</span>
+        <span class="logo-title">STARDUST</span>
+      </div>
+      <div class="nav-actions">
+        <button
+          class="sound-toggle-btn"
+          id="sound-btn"
+          title="Toggle Cosmic Ambience"
+        >
+          <span id="sound-icon">🔈</span>
+          <span class="sound-waves" id="sound-waves">
+            <span class="sound-bar"></span>
+            <span class="sound-bar"></span>
+            <span class="sound-bar"></span>
+          </span>
+          <span id="sound-label">Cosmic Audio</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+      <!-- SECTION 1: HERO / PORTAL -->
+      <section class="hero-section" id="hero">
+        <div class="hero-badge">
+          ✦ COSMIC EPHEMERIS & SILHOUETTE SYNTHESIZER ✦
+        </div>
+        <h1 class="hero-title">
+          Born Under The Stars.<br />Made Of The Stars.
+        </h1>
+        <p class="hero-quote">
+          “Every atom of oxygen in our lungs, every drop of iron in our blood,
+          was forged in collapsing stars.
+          <span>You are the cosmos experiencing itself.</span>”
+        </p>
+
+        <!-- Birth Inputs Form -->
+        <div class="birth-input-grid">
+          <div class="input-group">
+            <label class="input-label" for="user-name">Your Cosmic Name</label>
+            <input
+              type="text"
+              id="user-name"
+              class="input-field"
+              placeholder="e.g. Alex"
+              value="Alex"
+            />
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="birth-date">Birthdate</label>
+            <input
+              type="date"
+              id="birth-date"
+              class="input-field"
+              value="2000-08-15"
+            />
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="birth-time"
+              >Birth Time (Local)</label
+            >
+            <input
+              type="time"
+              id="birth-time"
+              class="input-field"
+              value="22:30"
+            />
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="birth-city"
+              >Birth City / Coordinates</label
+            >
+            <select id="birth-city" class="input-field">
+              <option value="40.7128,-74.0060" selected>New York, USA</option>
+              <option value="51.5074,-0.1278">London, UK</option>
+              <option value="35.6762,139.6503">Tokyo, Japan</option>
+              <option value="48.8566,2.3522">Paris, France</option>
+              <option value="28.6139,77.2090">New Delhi, India</option>
+              <option value="34.0522,-118.2437">Los Angeles, USA</option>
+              <option value="-33.8688,151.2093">Sydney, Australia</option>
+              <option value="25.2048,55.2708">Dubai, UAE</option>
+              <option value="-22.9068,-43.1729">Rio de Janeiro, Brazil</option>
+              <option value="52.5200,13.4050">Berlin, Germany</option>
+              <option value="1.3521,103.8198">Singapore</option>
+              <option value="30.0444,31.2357">Cairo, Egypt</option>
+              <option value="custom">Custom GPS Coordinates...</option>
+            </select>
+          </div>
+        </div>
+
+        <div
+          style="
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+          "
+        >
+          <button
+            class="btn-cosmic btn-cosmic-primary"
+            onclick="generateCosmicSky()"
+          >
+            <span>🔭 Calculate Birth Sky</span>
+          </button>
+          <button
+            class="btn-cosmic btn-cosmic-secondary"
+            onclick="scrollToSection('galaxy')"
+          >
+            <span>🌌 Be The Galaxy</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- SECTION 2: YOUR BIRTH SKY (OBSERVATORY) -->
+      <section id="birth-sky">
+        <div class="section-tag">True Astrometric Ephemeris</div>
+        <h2 class="section-heading">Your Celestial Vault</h2>
+        <p class="section-subtitle">
+          The exact stars, constellations, and lunar phase above your birthplace
+          the moment you entered this universe. Scrub through the night or hover
+          over stars to explore their light.
+        </p>
+
+        <div class="observatory-layout">
+          <!-- Sky Dome Canvas Wrapper -->
+          <div class="glass-card skydome-container">
+            <div class="skydome-canvas-wrapper">
+              <canvas id="sky-canvas" width="600" height="600"></canvas>
+              <span class="cardinal-label cardinal-n">N</span>
+              <span class="cardinal-label cardinal-s">S</span>
+              <span class="cardinal-label cardinal-e">E</span>
+              <span class="cardinal-label cardinal-w">W</span>
+              <div id="star-tooltip"></div>
+            </div>
+
+            <!-- Time Scrubber -->
+            <div class="scrubber-panel">
+              <div class="scrubber-header">
+                <span>Time-Lapse Scrub (Night of Birth)</span>
+                <span class="scrubber-time" id="scrubber-time-display"
+                  >22:30 Local Time</span
+                >
+              </div>
+              <input
+                type="range"
+                id="time-scrubber"
+                class="scrubber-slider"
+                min="0"
+                max="1439"
+                value="1350"
+                step="5"
+              />
+            </div>
+          </div>
+
+          <!-- Cosmic Metrics & Planetary Ages -->
+          <div class="observatory-data">
+            <!-- Moon Phase Card -->
+            <div class="glass-card moon-phase-card">
+              <div class="moon-canvas-container">
+                <canvas id="moon-canvas" width="180" height="180"></canvas>
+              </div>
+              <div>
+                <div class="moon-info-title">Lunar Phase on Birth Night</div>
+                <div class="moon-phase-name" id="moon-phase-name">
+                  Waxing Gibbous
+                </div>
+                <div class="moon-illumination" id="moon-illumination">
+                  88.4% Illumination
+                </div>
+              </div>
+            </div>
+
+            <!-- Your Light Star Card -->
+            <div class="glass-card light-star-card">
+              <div class="light-star-header">
+                <span class="star-sparkle-icon">✦</span>
+                <div class="light-star-name" id="light-star-name">
+                  Your Light Star: Vega
+                </div>
+              </div>
+              <p class="light-star-desc" id="light-star-desc">
+                Vega is 25 light-years away. When you drew your first breath on
+                Earth, the light striking your eyes right now began its journey
+                across the interstellar deep.
+              </p>
+            </div>
+
+            <!-- Planetary Ages -->
+            <div class="planets-grid">
+              <div class="planet-card">
+                <span class="planet-icon">♂️</span>
+                <div class="planet-name">Mars Age</div>
+                <div class="planet-age-value" id="mars-age">14.1 yrs</div>
+              </div>
+              <div class="planet-card">
+                <span class="planet-icon">♀️</span>
+                <div class="planet-name">Venus Age</div>
+                <div class="planet-age-value" id="venus-age">43.2 yrs</div>
+              </div>
+              <div class="planet-card">
+                <span class="planet-icon">♃</span>
+                <div class="planet-name">Jupiter Age</div>
+                <div class="planet-age-value" id="jupiter-age">2.2 yrs</div>
+              </div>
+            </div>
+
+            <!-- Live Heartbeat & Distance Alive -->
+            <div class="glass-card live-counters-card">
+              <div class="live-counter-item">
+                <span class="live-counter-label">Seconds in Universe</span>
+                <span class="live-counter-val" id="seconds-alive"
+                  >834,192,481</span
+                >
+              </div>
+              <div class="live-counter-item">
+                <span class="live-counter-label">Estimated Heartbeats</span>
+                <span class="live-counter-val"
+                  ><span class="pulse-heart">♥</span>
+                  <span id="heartbeats-alive">1,042,740,601</span></span
+                >
+              </div>
+              <div class="live-counter-item">
+                <span class="live-counter-label"
+                  >Orbit Distance Around Sun</span
+                >
+                <span class="live-counter-val" id="sun-distance"
+                  >24.8 Billion km</span
+                >
+              </div>
+            </div>
+
+            <!-- Next Birthdays -->
+            <div class="next-bdays-row">
+              <div class="bday-timer-card">
+                <div class="bday-timer-title">Next Earth Birthday</div>
+                <div class="bday-timer-val" id="next-earth-bday">
+                  In 142 Days
+                </div>
+              </div>
+              <div class="bday-timer-card">
+                <div class="bday-timer-title">Next Mars Birthday</div>
+                <div class="bday-timer-val" id="next-mars-bday">
+                  In 288 Days
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3: BE THE GALAXY (CAMERA / MOUSE PARTICLE SILHOUETTE) -->
+      <section id="galaxy" class="galaxy-section">
+        <div class="section-tag">Interactive Stardust Avatar</div>
+        <h2 class="section-heading">Be The Galaxy</h2>
+        <p class="section-subtitle">
+          Your body transmutes into thousands of glowing stars. Wave to unleash
+          a supernova, make a fist or drag to forge a black hole, open your palm
+          to expand the cosmos, or dance to orbit the stars.
+        </p>
+
+        <div class="galaxy-interface">
+          <!-- Canvas Viewport -->
+          <div class="galaxy-viewport-card">
+            <!-- Privacy Shield -->
+            <div class="privacy-badge">
+              <span class="privacy-dot"></span>
+              <span>Your camera never leaves your device</span>
+            </div>
+
+            <!-- Main Interactive Particle Canvas -->
+            <canvas id="galaxy-canvas"></canvas>
+
+            <!-- Hidden elements for local image processing -->
+            <video id="webcam-video" playsinline autoplay muted></video>
+            <canvas id="proc-canvas" width="120" height="90"></canvas>
+
+            <!-- In-Canvas HUD -->
+            <div class="galaxy-hud">
+              <div class="hud-gesture-badge">
+                <span>Active State:</span>
+                <span id="active-gesture-name">Nebula Equilibrium</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls Sidebar -->
+          <div class="glass-card galaxy-controls-panel">
+            <!-- Camera / Mode Switch -->
+            <div class="control-group">
+              <label class="control-title">Input Source</label>
+              <div class="mode-switch-container">
+                <button
+                  class="mode-switch-btn active"
+                  id="btn-mode-mouse"
+                  onclick="setGalaxyInputMode('mouse')"
+                >
+                  🖱️ Mouse & Touch
+                </button>
+                <button
+                  class="mode-switch-btn"
+                  id="btn-mode-camera"
+                  onclick="setGalaxyInputMode('camera')"
+                >
+                  📷 Webcam
+                </button>
+              </div>
+            </div>
+
+            <!-- Camera On/Off Action (visible when camera mode is selected) -->
+            <div
+              class="control-group"
+              id="camera-buttons-box"
+              style="display: none"
+            >
+              <button
+                class="btn-cosmic btn-cosmic-secondary"
+                id="btn-toggle-camera"
+                onclick="toggleCamera()"
+              >
+                <span id="camera-btn-text">Turn Camera On</span>
+              </button>
+            </div>
+
+            <!-- Interactive Gesture Triggers -->
+            <div class="control-group">
+              <label class="control-title">Trigger Cosmic Force</label>
+              <div class="gesture-triggers">
+                <button
+                  class="btn-gesture"
+                  onclick="triggerGesture('supernova')"
+                >
+                  <span class="icon">💥</span>
+                  <span>Wave / Nova</span>
+                </button>
+                <button
+                  class="btn-gesture"
+                  onclick="triggerGesture('blackhole')"
+                >
+                  <span class="icon">🕳️</span>
+                  <span>Fist / Void</span>
+                </button>
+                <button class="btn-gesture" onclick="triggerGesture('expand')">
+                  <span class="icon">✨</span>
+                  <span>Open Palm</span>
+                </button>
+                <button class="btn-gesture" onclick="triggerGesture('pinch')">
+                  <span class="icon">🌟</span>
+                  <span>Pinch / Pull</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Particle Themes -->
+            <div class="control-group">
+              <label class="control-title">Galaxy Spectrum</label>
+              <select
+                id="particle-color-theme"
+                class="input-field"
+                onchange="changeParticlePalette(this.value)"
+              >
+                <option value="birth">Birth Sky Starlight (Cyan & Gold)</option>
+                <option value="nebula">Violet Quasar (Pink & Purple)</option>
+                <option value="aurora">Solar Aurora (Emerald & Ice)</option>
+                <option value="supernova">Supernova Core (Ruby & Amber)</option>
+              </select>
+            </div>
+
+            <!-- Capture & Record Actions -->
+            <div class="capture-actions">
+              <button
+                class="btn-cosmic btn-cosmic-secondary"
+                onclick="captureGalaxyPhoto()"
+              >
+                <span>📸 Capture Stardust Photo</span>
+              </button>
+              <button
+                class="btn-cosmic btn-record"
+                id="btn-record-clip"
+                onclick="toggleClipRecording()"
+              >
+                <span id="record-btn-text">🎥 Record 15s Video Clip</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: FRIEND MATCH (COSMIC SYNASTRY) -->
+      <section id="friend-match">
+        <div class="section-tag">Celestial Harmonics</div>
+        <h2 class="section-heading">Friend Stardust Match</h2>
+        <p class="section-subtitle">
+          Enter a friend's birthday to uncover how your skies weave together.
+          Discover whose night sky was brighter, your orbital age difference,
+          and your cosmic harmony score.
+        </p>
+
+        <div class="glass-card match-card">
+          <div class="match-inputs-grid">
+            <div class="input-group">
+              <label class="input-label">You</label>
+              <input
+                type="text"
+                id="p1-name"
+                class="input-field"
+                value="Alex"
+                readonly
+              />
+              <input
+                type="date"
+                id="p1-date"
+                class="input-field"
+                value="2000-08-15"
+                readonly
+                style="margin-top: 8px"
+              />
+            </div>
+            <div class="match-divider">✦ VS ✦</div>
+            <div class="input-group">
+              <label class="input-label">Friend's Name & Birthday</label>
+              <input
+                type="text"
+                id="p2-name"
+                class="input-field"
+                placeholder="Friend's Name"
+                value="Jordan"
+              />
+              <input
+                type="date"
+                id="p2-date"
+                class="input-field"
+                value="2001-11-04"
+                style="margin-top: 8px"
+              />
+            </div>
+          </div>
+
+          <div style="text-align: center; margin-bottom: 30px">
+            <button
+              class="btn-cosmic btn-cosmic-primary"
+              onclick="calculateFriendMatch()"
+            >
+              <span>✨ Calculate Cosmic Alignment</span>
+            </button>
+          </div>
+
+          <!-- Results Display -->
+          <div class="match-result-view" id="match-results">
+            <div class="match-person-card">
+              <div class="match-avatar-circle" id="p1-moon-avatar">🌔</div>
+              <h3 id="p1-res-name">Alex</h3>
+              <p
+                style="font-size: 0.8rem; color: var(--text-muted)"
+                id="p1-moon-desc"
+              >
+                Waxing Gibbous
+              </p>
+            </div>
+
+            <div class="match-score-badge">
+              <div class="match-score-num" id="match-score-num">96%</div>
+              <div class="match-score-text">Cosmic Resonance</div>
+            </div>
+
+            <div class="match-person-card">
+              <div class="match-avatar-circle" id="p2-moon-avatar">🌖</div>
+              <h3 id="p2-res-name">Jordan</h3>
+              <p
+                style="font-size: 0.8rem; color: var(--text-muted)"
+                id="p2-moon-desc"
+              >
+                Waning Gibbous
+              </p>
+            </div>
+          </div>
+
+          <div class="match-details-grid">
+            <div class="match-detail-box">
+              <h4>Temporal Distance</h4>
+              <p id="match-days-diff">446 Days Apart on Earth</p>
+            </div>
+            <div class="match-detail-box">
+              <h4>Brighter Sky</h4>
+              <p id="match-brighter-sky">Jordan's Sky (94% Lunar Flux)</p>
+            </div>
+            <div class="match-detail-box">
+              <h4>Mars Age Difference</h4>
+              <p id="match-mars-diff">0.65 Mars Years Apart</p>
+            </div>
+            <div class="match-detail-box">
+              <h4>Orbital Alignment</h4>
+              <p id="match-synastry-desc">Harmonic Trigon Phase</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 5: SHARE CARD GENERATOR & LINK -->
+      <section id="share-card">
+        <div class="section-tag">Cosmic Passport</div>
+        <h2 class="section-heading">Share Your Stardust</h2>
+        <p class="section-subtitle">
+          Generate your celestial collector card complete with your birth sky
+          dome, planetary metrics, and stardust sigil. Share your unique link
+          with friends!
+        </p>
+
+        <div class="share-section-grid">
+          <!-- Canvas Preview -->
+          <div class="share-card-preview-wrapper">
+            <div class="share-canvas-card">
+              <canvas id="share-card-canvas" width="800" height="1000"></canvas>
+            </div>
+          </div>
+
+          <!-- Controls & Links -->
+          <div class="share-controls">
+            <h3 style="font-family: var(--font-display); font-size: 1.8rem">
+              Your Cosmic Identity Card
+            </h3>
+            <p style="color: var(--text-muted); line-height: 1.6">
+              Rendered at high resolution ready for your Instagram Stories,
+              wallpaper, or framing. Contains your true celestial coordinates
+              and light star signature.
+            </p>
+
+            <div style="display: flex; gap: 14px; flex-wrap: wrap">
+              <button
+                class="btn-cosmic btn-cosmic-primary"
+                onclick="downloadShareCard()"
+              >
+                <span>📥 Download Cosmic Card (PNG)</span>
+              </button>
+              <button
+                class="btn-cosmic btn-cosmic-secondary"
+                onclick="renderShareCard()"
+              >
+                <span>🔄 Refresh Card Visual</span>
+              </button>
+            </div>
+
+            <div style="margin-top: 15px">
+              <label
+                class="input-label"
+                style="display: block; margin-bottom: 8px"
+                >Direct Link to Your Birth Sky</label
+              >
+              <div class="share-link-box">
+                <input
+                  type="text"
+                  id="share-link-input"
+                  class="share-link-input"
+                  readonly
+                  value="https://..."
+                />
+                <button
+                  class="btn-cosmic btn-cosmic-secondary"
+                  style="padding: 6px 16px; font-size: 0.72rem"
+                  onclick="copyShareLink()"
+                >
+                  <span>Copy Link</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="cosmic-toast">
+      <span>✨</span>
+      <span id="toast-message">Cosmic link copied to clipboard!</span>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <p>
+        ✨ STARDUST — Crafted with precision astronomical calculations (J2000
+        epoch reduction & sidereal time equations).
+      </p>
+      <p style="margin-top: 6px; font-size: 0.75rem">
+        Stars and Moon phases are mathematically accurate. Planetary locations
+        are approximated for interactive celestial visualization.
+      </p>
+    </footer>
+
+    <!-- ==========================================================================
+       JAVASCRIPT: ASTRONOMICAL EPHEMERIS, WEBCAM & PARTICLE PHYSICS ENGINE
+       ========================================================================== -->
+    <script>
+      /* 1. STATE & SOUND SYNTHESIZER */
+      const State = {
+        name: "Alex",
+        birthDate: new Date("2000-08-15T22:30:00"),
+        latitude: 40.7128,
+        longitude: -74.006,
+        cityName: "New York, USA",
+        scrubMinutes: 1350,
+        soundEnabled: false,
+        galaxyMode: "mouse",
+        cameraActive: false,
+        mediaRecorder: null,
+        recordedChunks: [],
+        particlesTheme: "birth",
+        activeGesture: "idle",
+        lastPhotoDataUrl: null,
+      };
+
+      class CosmicSoundEngine {
+        constructor() {
+          this.ctx = null;
+          this.gainNode = null;
+          this.filter = null;
+          this.droneOsc1 = null;
+          this.droneOsc2 = null;
+          this.initialized = false;
+        }
+
+        init() {
+          if (this.initialized) return;
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+
+          this.gainNode = this.ctx.createGain();
+          this.gainNode.gain.setValueAtTime(0.01, this.ctx.currentTime);
+          this.gainNode.connect(this.ctx.destination);
+
+          this.filter = this.ctx.createBiquadFilter();
+          this.filter.type = "lowpass";
+          this.filter.frequency.setValueAtTime(320, this.ctx.currentTime);
+          this.filter.connect(this.gainNode);
+
+          this.droneOsc1 = this.ctx.createOscillator();
+          this.droneOsc1.type = "sine";
+          this.droneOsc1.frequency.setValueAtTime(55, this.ctx.currentTime);
+
+          this.droneOsc2 = this.ctx.createOscillator();
+          this.droneOsc2.type = "triangle";
+          this.droneOsc2.frequency.setValueAtTime(110.5, this.ctx.currentTime);
+
+          this.droneOsc1.connect(this.filter);
+          this.droneOsc2.connect(this.filter);
+
+          this.droneOsc1.start();
+          this.droneOsc2.start();
+          this.initialized = true;
+        }
+
+        toggle() {
+          if (!this.initialized) this.init();
+          if (this.ctx.state === "suspended") this.ctx.resume();
+
+          State.soundEnabled = !State.soundEnabled;
+          const targetGain = State.soundEnabled ? 0.35 : 0.0001;
+          this.gainNode.gain.setTargetAtTime(
+            targetGain,
+            this.ctx.currentTime,
+            0.4,
+          );
+
+          const btn = document.getElementById("sound-btn");
+          const icon = document.getElementById("sound-icon");
+          const label = document.getElementById("sound-label");
+          if (State.soundEnabled) {
+            btn.classList.add("sound-playing");
+            icon.textContent = "🔊";
+            label.textContent = "Mute Audio";
+            showToast("Cosmic ambience active");
+          } else {
+            btn.classList.remove("sound-playing");
+            icon.textContent = "🔈";
+            label.textContent = "Cosmic Audio";
+          }
+        }
+
+        playShimmer() {
+          if (!State.soundEnabled || !this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const freqs = [523.25, 659.25, 783.99, 1046.5, 1318.51];
+          const f = freqs[Math.floor(Math.random() * freqs.length)];
+          osc.frequency.setValueAtTime(f, this.ctx.currentTime);
+          osc.type = "sine";
+          gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            this.ctx.currentTime + 1.2,
+          );
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 1.2);
+        }
+
+        playExplosion() {
+          if (!State.soundEnabled || !this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(
+            30,
+            this.ctx.currentTime + 1.5,
+          );
+          gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            this.ctx.currentTime + 1.8,
+          );
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 1.8);
+        }
+
+        playSingularity() {
+          if (!State.soundEnabled || !this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.frequency.setValueAtTime(60, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(
+            260,
+            this.ctx.currentTime + 0.8,
+          );
+          osc.frequency.exponentialRampToValueAtTime(
+            45,
+            this.ctx.currentTime + 2.0,
+          );
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            this.ctx.currentTime + 2.2,
+          );
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 2.2);
+        }
+      }
+      const audioSynth = new CosmicSoundEngine();
+      document
+        .getElementById("sound-btn")
+        .addEventListener("click", () => audioSynth.toggle());
+
+      /* 2. STAR CATALOG & ASTRONOMICAL CALCULATIONS */
+      const STAR_CATALOG = [
+        {
+          name: "Sirius",
+          ra: 6.75,
+          dec: -16.72,
+          mag: -1.46,
+          dist: 8.6,
+          constellation: "Canis Major",
+          color: "#a2c4fd",
+        },
+        {
+          name: "Canopus",
+          ra: 6.4,
+          dec: -52.7,
+          mag: -0.74,
+          dist: 310,
+          constellation: "Carina",
+          color: "#f8f9fa",
+        },
+        {
+          name: "Rigil Kentaurus",
+          ra: 14.66,
+          dec: -60.83,
+          mag: -0.27,
+          dist: 4.37,
+          constellation: "Centaurus",
+          color: "#ffecb3",
+        },
+        {
+          name: "Arcturus",
+          ra: 14.26,
+          dec: 19.18,
+          mag: -0.05,
+          dist: 36.7,
+          constellation: "Boötes",
+          color: "#ffb74d",
+        },
+        {
+          name: "Vega",
+          ra: 18.62,
+          dec: 38.78,
+          mag: 0.03,
+          dist: 25.0,
+          constellation: "Lyra",
+          color: "#bbdefb",
+        },
+        {
+          name: "Capella",
+          ra: 5.28,
+          dec: 45.99,
+          mag: 0.08,
+          dist: 42.9,
+          constellation: "Auriga",
+          color: "#fff59d",
+        },
+        {
+          name: "Rigel",
+          ra: 5.24,
+          dec: -8.2,
+          mag: 0.13,
+          dist: 860,
+          constellation: "Orion",
+          color: "#90caf9",
+        },
+        {
+          name: "Procyon",
+          ra: 7.65,
+          dec: 5.22,
+          mag: 0.38,
+          dist: 11.5,
+          constellation: "Canis Minor",
+          color: "#fff9c4",
+        },
+        {
+          name: "Achernar",
+          ra: 1.63,
+          dec: -57.24,
+          mag: 0.46,
+          dist: 139,
+          constellation: "Eridanus",
+          color: "#90caf9",
+        },
+        {
+          name: "Betelgeuse",
+          ra: 5.92,
+          dec: 7.41,
+          mag: 0.5,
+          dist: 548,
+          constellation: "Orion",
+          color: "#ff7043",
+        },
+        {
+          name: "Hadar",
+          ra: 14.06,
+          dec: -60.37,
+          mag: 0.61,
+          dist: 390,
+          constellation: "Centaurus",
+          color: "#90caf9",
+        },
+        {
+          name: "Altair",
+          ra: 19.84,
+          dec: 8.87,
+          mag: 0.77,
+          dist: 16.7,
+          constellation: "Aquila",
+          color: "#e3f2fd",
+        },
+        {
+          name: "Acrux",
+          ra: 12.44,
+          dec: -63.1,
+          mag: 0.77,
+          dist: 320,
+          constellation: "Crux",
+          color: "#90caf9",
+        },
+        {
+          name: "Aldebaran",
+          ra: 4.6,
+          dec: 16.51,
+          mag: 0.85,
+          dist: 65.3,
+          constellation: "Taurus",
+          color: "#ffab91",
+        },
+        {
+          name: "Antares",
+          ra: 16.49,
+          dec: -26.43,
+          mag: 0.96,
+          dist: 550,
+          constellation: "Scorpius",
+          color: "#ff5722",
+        },
+        {
+          name: "Spica",
+          ra: 13.42,
+          dec: -11.16,
+          mag: 0.98,
+          dist: 250,
+          constellation: "Virgo",
+          color: "#90caf9",
+        },
+        {
+          name: "Pollux",
+          ra: 7.76,
+          dec: 28.03,
+          mag: 1.14,
+          dist: 33.7,
+          constellation: "Gemini",
+          color: "#ffe082",
+        },
+        {
+          name: "Fomalhaut",
+          ra: 22.96,
+          dec: -29.62,
+          mag: 1.16,
+          dist: 25.1,
+          constellation: "Piscis Austrinus",
+          color: "#e3f2fd",
+        },
+        {
+          name: "Deneb",
+          ra: 20.69,
+          dec: 45.28,
+          mag: 1.25,
+          dist: 2615,
+          constellation: "Cygnus",
+          color: "#e3f2fd",
+        },
+        {
+          name: "Mimosa",
+          ra: 12.79,
+          dec: -59.69,
+          mag: 1.25,
+          dist: 280,
+          constellation: "Crux",
+          color: "#90caf9",
+        },
+        {
+          name: "Regulus",
+          ra: 10.14,
+          dec: 11.97,
+          mag: 1.36,
+          dist: 79.3,
+          constellation: "Leo",
+          color: "#bbdefb",
+        },
+        {
+          name: "Castor",
+          ra: 7.58,
+          dec: 31.89,
+          mag: 1.58,
+          dist: 51.6,
+          constellation: "Gemini",
+          color: "#ffffff",
+        },
+        {
+          name: "Bellatrix",
+          ra: 5.42,
+          dec: 6.35,
+          mag: 1.64,
+          dist: 250,
+          constellation: "Orion",
+          color: "#90caf9",
+        },
+        {
+          name: "Alnilam",
+          ra: 5.6,
+          dec: -1.2,
+          mag: 1.69,
+          dist: 2000,
+          constellation: "Orion",
+          color: "#90caf9",
+        },
+        {
+          name: "Alioth",
+          ra: 12.9,
+          dec: 55.96,
+          mag: 1.76,
+          dist: 82.6,
+          constellation: "Ursa Major",
+          color: "#ffffff",
+        },
+        {
+          name: "Alnitak",
+          ra: 5.68,
+          dec: -1.94,
+          mag: 1.77,
+          dist: 1260,
+          constellation: "Orion",
+          color: "#90caf9",
+        },
+        {
+          name: "Dubhe",
+          ra: 11.06,
+          dec: 61.75,
+          mag: 1.79,
+          dist: 123,
+          constellation: "Ursa Major",
+          color: "#ffd54f",
+        },
+        {
+          name: "Alkaid",
+          ra: 13.79,
+          dec: 49.31,
+          mag: 1.85,
+          dist: 104,
+          constellation: "Ursa Major",
+          color: "#90caf9",
+        },
+        {
+          name: "Polaris",
+          ra: 2.53,
+          dec: 89.26,
+          mag: 1.98,
+          dist: 433,
+          constellation: "Ursa Minor",
+          color: "#fff9c4",
+        },
+      ];
+
+      const CONSTELLATION_LINES = [
+        ["Betelgeuse", "Bellatrix"],
+        ["Bellatrix", "Rigel"],
+        ["Betelgeuse", "Alnitak"],
+        ["Alnitak", "Alnilam"],
+        ["Alnilam", "Rigel"],
+        ["Rigel", "Bellatrix"],
+        ["Dubhe", "Alioth"],
+        ["Alioth", "Alkaid"],
+        ["Vega", "Deneb"],
+        ["Deneb", "Altair"],
+        ["Altair", "Vega"],
+        ["Castor", "Pollux"],
+        ["Acrux", "Mimosa"],
+      ];
+
+      function getJulianDate(date) {
+        return date.getTime() / 86400000 + 2440587.5;
+      }
+
+      function getLocalSiderealTime(date, longitude) {
+        const jd = getJulianDate(date);
+        const d = jd - 2451545.0;
+        let gmst = 280.46061837 + 360.98564736629 * d;
+        gmst = ((gmst % 360) + 360) % 360;
+        let lstDeg = (gmst + (longitude % 360) + 360) % 360;
+        return lstDeg / 15.0;
+      }
+
+      function raDecToAltAz(ra, dec, latDeg, lstHours) {
+        const latRad = (latDeg * Math.PI) / 180;
+        const decRad = (dec * Math.PI) / 180;
+        const haHours = lstHours - ra;
+        const haRad = (haHours * 15 * Math.PI) / 180;
+
+        const sinAlt =
+          Math.sin(decRad) * Math.sin(latRad) +
+          Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
+        const altRad = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+        const altDeg = (altRad * 180) / Math.PI;
+
+        const cosAlt = Math.cos(altRad);
+        let azDeg = 0;
+        if (Math.abs(cosAlt) > 0.0001) {
+          const cosAz =
+            (Math.sin(decRad) - Math.sin(altRad) * Math.sin(latRad)) /
+            (cosAlt * Math.cos(latRad));
+          const azRad = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+          azDeg = (azRad * 180) / Math.PI;
+          if (Math.sin(haRad) > 0) azDeg = 360 - azDeg;
+        }
+        return { alt: altDeg, az: azDeg };
+      }
+
+      function getMoonPhase(date) {
+        const jd = getJulianDate(date);
+        const daysSinceNew = jd - 2451549.26;
+        const synodicMonth = 29.53058867;
+        let phaseAge =
+          ((daysSinceNew % synodicMonth) + synodicMonth) % synodicMonth;
+        const phaseFraction = phaseAge / synodicMonth;
+        const illumination =
+          ((1 - Math.cos(phaseFraction * 2 * Math.PI)) / 2) * 100;
+
+        let phaseName = "",
+          emoji = "🌕";
+        if (phaseAge < 1.84) {
+          phaseName = "New Moon";
+          emoji = "🌑";
+        } else if (phaseAge < 5.53) {
+          phaseName = "Waxing Crescent";
+          emoji = "🌒";
+        } else if (phaseAge < 9.22) {
+          phaseName = "First Quarter";
+          emoji = "🌓";
+        } else if (phaseAge < 12.91) {
+          phaseName = "Waxing Gibbous";
+          emoji = "🌔";
+        } else if (phaseAge < 16.61) {
+          phaseName = "Full Moon";
+          emoji = "🌕";
+        } else if (phaseAge < 20.3) {
+          phaseName = "Waning Gibbous";
+          emoji = "🌖";
+        } else if (phaseAge < 23.99) {
+          phaseName = "Third Quarter";
+          emoji = "🌗";
+        } else if (phaseAge < 27.68) {
+          phaseName = "Waning Crescent";
+          emoji = "🌘";
+        } else {
+          phaseName = "New Moon";
+          emoji = "🌑";
+        }
+
+        return {
+          age: phaseAge,
+          fraction: phaseFraction,
+          illumination: illumination.toFixed(1),
+          name: phaseName,
+          emoji,
+        };
+      }
+
+      function drawMoonCanvas(moonPhase) {
+        const canvas = document.getElementById("moon-canvas");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const w = canvas.width,
+          h = canvas.height;
+        const r = w * 0.44,
+          cx = w / 2,
+          cy = h / 2;
+
+        ctx.clearRect(0, 0, w, h);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = "#0f172a";
+        ctx.fill();
+
+        const phase = moonPhase.fraction;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.clip();
+
+        const moonGrad = ctx.createRadialGradient(
+          cx - r * 0.2,
+          cy - r * 0.2,
+          r * 0.1,
+          cx,
+          cy,
+          r,
+        );
+        moonGrad.addColorStop(0, "#fefae0");
+        moonGrad.addColorStop(0.5, "#e2e8f0");
+        moonGrad.addColorStop(1, "#94a3b8");
+        ctx.fillStyle = moonGrad;
+
+        ctx.beginPath();
+        if (phase <= 0.5) {
+          ctx.arc(cx, cy, r, -Math.PI / 2, Math.PI / 2, false);
+          const k = Math.cos(phase * 2 * Math.PI);
+          ctx.ellipse(
+            cx,
+            cy,
+            Math.abs(k) * r,
+            r,
+            0,
+            Math.PI / 2,
+            -Math.PI / 2,
+            k < 0,
+          );
+        } else {
+          ctx.arc(cx, cy, r, Math.PI / 2, -Math.PI / 2, false);
+          const k = Math.cos(phase * 2 * Math.PI);
+          ctx.ellipse(
+            cx,
+            cy,
+            Math.abs(k) * r,
+            r,
+            0,
+            -Math.PI / 2,
+            Math.PI / 2,
+            k > 0,
+          );
+        }
+        ctx.fill();
+        ctx.restore();
+      }
+
+      let visibleScreenStars = [];
+      function renderSkyDome() {
+        const canvas = document.getElementById("sky-canvas");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const w = canvas.width,
+          h = canvas.height;
+        const cx = w / 2,
+          cy = h / 2,
+          radius = (w / 2) * 0.92;
+
+        ctx.clearRect(0, 0, w, h);
+
+        const skyGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        skyGrad.addColorStop(0, "#0a122e");
+        skyGrad.addColorStop(0.7, "#04091a");
+        skyGrad.addColorStop(1, "#02050e");
+        ctx.fillStyle = skyGrad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(0, 245, 212, 0.35)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        const obsDate = new Date(State.birthDate);
+        const hours = Math.floor(State.scrubMinutes / 60);
+        const mins = State.scrubMinutes % 60;
+        obsDate.setHours(hours, mins, 0, 0);
+
+        const lst = getLocalSiderealTime(obsDate, State.longitude);
+        visibleScreenStars = [];
+        const starMap = {};
+
+        STAR_CATALOG.forEach((star) => {
+          const { alt, az } = raDecToAltAz(
+            star.ra,
+            star.dec,
+            State.latitude,
+            lst,
+          );
+          if (alt > 0) {
+            const rStar = radius * (1 - alt / 90);
+            const azRad = ((az - 90) * Math.PI) / 180;
+            const x = cx + rStar * Math.cos(azRad);
+            const y = cy + rStar * Math.sin(azRad);
+            starMap[star.name] = { x, y, alt, az, star };
+            visibleScreenStars.push({ x, y, alt, az, star });
+          }
+        });
+
+        // Constellation Lines
+        ctx.strokeStyle = "rgba(0, 245, 212, 0.22)";
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([3, 4]);
+        CONSTELLATION_LINES.forEach(([n1, n2]) => {
+          const s1 = starMap[n1],
+            s2 = starMap[n2];
+          if (s1 && s2) {
+            ctx.beginPath();
+            ctx.moveTo(s1.x, s1.y);
+            ctx.lineTo(s2.x, s2.y);
+            ctx.stroke();
+          }
+        });
+        ctx.setLineDash([]);
+
+        // Stars
+        const nowMs = Date.now();
+        visibleScreenStars.forEach((s) => {
+          const magSize = Math.max(1.8, 2.6 - s.star.mag * 0.7);
+          const twinkle = 0.8 + 0.3 * Math.sin(nowMs * 0.003 + s.x);
+
+          const glow = ctx.createRadialGradient(
+            s.x,
+            s.y,
+            0,
+            s.x,
+            s.y,
+            magSize * 4,
+          );
+          glow.addColorStop(0, s.star.color);
+          glow.addColorStop(1, "transparent");
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, magSize * 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, magSize * twinkle, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (s.star.mag < 0.8) {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+            ctx.font = "9px Orbitron";
+            ctx.fillText(s.star.name, s.x + 8, s.y - 4);
+          }
+        });
+      }
+
+      // Sky Hover Tooltip
+      const skyCanvas = document.getElementById("sky-canvas");
+      const starTooltip = document.getElementById("star-tooltip");
+      if (skyCanvas && starTooltip) {
+        skyCanvas.addEventListener("mousemove", (e) => {
+          const rect = skyCanvas.getBoundingClientRect();
+          const mx = (e.clientX - rect.left) * (skyCanvas.width / rect.width);
+          const my = (e.clientY - rect.top) * (skyCanvas.height / rect.height);
+          let hovered = null;
+          for (const s of visibleScreenStars) {
+            if (Math.hypot(s.x - mx, s.y - my) < 14) {
+              hovered = s;
+              break;
+            }
+          }
+          if (hovered) {
+            starTooltip.style.opacity = "1";
+            starTooltip.style.left = `${e.clientX - rect.left}px`;
+            starTooltip.style.top = `${e.clientY - rect.top}px`;
+            starTooltip.innerHTML = `
+            <strong style="color:var(--cyan-glow); font-family:var(--font-tech);">${hovered.star.name}</strong><br>
+            <span style="color:#cbd5e1;">Constellation: ${hovered.star.constellation}</span><br>
+            <span style="color:var(--gold-starlight);">Distance: ${hovered.star.dist} light-years</span>
+          `;
+            audioSynth.playShimmer();
+          } else {
+            starTooltip.style.opacity = "0";
+          }
+        });
+        skyCanvas.addEventListener(
+          "mouseleave",
+          () => (starTooltip.style.opacity = "0"),
+        );
+      }
+
+      // Time Scrubber Listener
+      const timeScrubber = document.getElementById("time-scrubber");
+      const timeDisplay = document.getElementById("scrubber-time-display");
+      if (timeScrubber) {
+        timeScrubber.addEventListener("input", (e) => {
+          State.scrubMinutes = parseInt(e.target.value);
+          const h = Math.floor(State.scrubMinutes / 60)
+            .toString()
+            .padStart(2, "0");
+          const m = (State.scrubMinutes % 60).toString().padStart(2, "0");
+          timeDisplay.textContent = `${h}:${m} Local Time`;
+          renderSkyDome();
+        });
+      }
+
+      /* 3. METRICS, AGES & LIGHT STAR */
+      function updateCosmicMetrics() {
+        const now = new Date();
+        const diffMs = now.getTime() - State.birthDate.getTime();
+        const earthYears = diffMs / (1000 * 60 * 60 * 24 * 365.2422);
+
+        document.getElementById("mars-age").textContent =
+          (earthYears / 1.8808).toFixed(2) + " yrs";
+        document.getElementById("venus-age").textContent =
+          (earthYears / 0.6152).toFixed(2) + " yrs";
+        document.getElementById("jupiter-age").textContent =
+          (earthYears / 11.8626).toFixed(2) + " yrs";
+
+        const totalSeconds = Math.floor(diffMs / 1000);
+        document.getElementById("seconds-alive").textContent =
+          totalSeconds.toLocaleString();
+        document.getElementById("heartbeats-alive").textContent = Math.floor(
+          totalSeconds * 1.25,
+        ).toLocaleString();
+        const kmSun = (totalSeconds * 29.7827) / 1000000;
+        document.getElementById("sun-distance").textContent =
+          kmSun.toFixed(1) + " Million km";
+
+        // Light Star Match
+        let closestStar = STAR_CATALOG[0];
+        let minDiff = Math.abs(closestStar.dist - earthYears);
+        STAR_CATALOG.forEach((s) => {
+          const d = Math.abs(s.dist - earthYears);
+          if (d < minDiff) {
+            minDiff = d;
+            closestStar = s;
+          }
+        });
+
+        document.getElementById("light-star-name").textContent =
+          `Your Light Star: ${closestStar.name}`;
+        document.getElementById("light-star-desc").innerHTML = `
+        <strong>${closestStar.name}</strong> (${closestStar.constellation}) is <strong>${closestStar.dist} light-years</strong> from Earth.
+        When you took your first breath ${earthYears.toFixed(1)} years ago, the photons striking your eyes tonight set out across the cosmos.
+      `;
+
+        // Next Birthdays
+        const nextEarth = new Date(State.birthDate);
+        nextEarth.setFullYear(now.getFullYear());
+        if (nextEarth < now) nextEarth.setFullYear(now.getFullYear() + 1);
+        const daysToNextEarth = Math.ceil((nextEarth - now) / 86400000);
+        document.getElementById("next-earth-bday").textContent =
+          `In ${daysToNextEarth} Days`;
+
+        const daysAlive = diffMs / 86400000;
+        const nextMarsYear = Math.ceil(daysAlive / 686.97);
+        const daysToNextMars = Math.ceil(nextMarsYear * 686.97 - daysAlive);
+        document.getElementById("next-mars-bday").textContent =
+          `In ${daysToNextMars} Days`;
+
+        const moon = getMoonPhase(State.birthDate);
+        document.getElementById("moon-phase-name").textContent = moon.name;
+        document.getElementById("moon-illumination").textContent =
+          `${moon.illumination}% Illumination`;
+        drawMoonCanvas(moon);
+      }
+
+      setInterval(() => {
+        const diffMs = Date.now() - State.birthDate.getTime();
+        const totalSeconds = Math.floor(diffMs / 1000);
+        const secEl = document.getElementById("seconds-alive");
+        const heartEl = document.getElementById("heartbeats-alive");
+        if (secEl) secEl.textContent = totalSeconds.toLocaleString();
+        if (heartEl)
+          heartEl.textContent = Math.floor(
+            totalSeconds * 1.25,
+          ).toLocaleString();
+      }, 1000);
+
+      /* 4. BE THE GALAXY PARTICLE ENGINE & WEBCAM */
+      const galaxyCanvas = document.getElementById("galaxy-canvas");
+      const galaxyCtx = galaxyCanvas.getContext("2d");
+      const webcamVideo = document.getElementById("webcam-video");
+      const procCanvas = document.getElementById("proc-canvas");
+      const procCtx = procCanvas.getContext("2d");
+
+      const NUM_PARTICLES = 1600;
+      const particles = [];
+      let mousePos = { x: 0, y: 0, isDown: false, prevX: 0, prevY: 0 };
+      let galaxyColorPalette = ["#00f5d4", "#9d4edd", "#ffd166", "#ffffff"];
+
+      function resizeGalaxyCanvas() {
+        const parent = galaxyCanvas.parentElement;
+        galaxyCanvas.width = parent.clientWidth;
+        galaxyCanvas.height = parent.clientHeight;
+      }
+
+      class StellarParticle {
+        constructor(w, h) {
+          this.x = Math.random() * w;
+          this.y = Math.random() * h;
+          this.vx = (Math.random() - 0.5) * 1.2;
+          this.vy = (Math.random() - 0.5) * 1.2;
+          this.size = Math.random() * 2.2 + 0.8;
+          this.color =
+            galaxyColorPalette[
+              Math.floor(Math.random() * galaxyColorPalette.length)
+            ];
+          this.targetX = this.x;
+          this.targetY = this.y;
+          this.hasTarget = false;
+          this.alpha = Math.random() * 0.7 + 0.3;
+        }
+
+        update(w, h) {
+          if (this.hasTarget) {
+            this.vx += (this.targetX - this.x) * 0.04;
+            this.vy += (this.targetY - this.y) * 0.04;
+            this.vx *= 0.88;
+            this.vy *= 0.88;
+          } else {
+            const rx = this.x - w / 2;
+            const ry = this.y - h / 2;
+            this.vx += -ry * 0.00035;
+            this.vy += rx * 0.00035;
+            this.vx *= 0.985;
+            this.vy *= 0.985;
+          }
+          this.x += this.vx;
+          this.y += this.vy;
+          if (this.x < 0) this.x = w;
+          if (this.x > w) this.x = 0;
+          if (this.y < 0) this.y = h;
+          if (this.y > h) this.y = 0;
+        }
+
+        draw(ctx) {
+          ctx.fillStyle = this.color;
+          ctx.globalAlpha = this.alpha;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+        }
+      }
+
+      function initGalaxyParticles() {
+        resizeGalaxyCanvas();
+        particles.length = 0;
+        const w = galaxyCanvas.width,
+          h = galaxyCanvas.height;
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+          particles.push(new StellarParticle(w, h));
+        }
+      }
+
+      function triggerGesture(type) {
+        State.activeGesture = type;
+        const hudName = document.getElementById("active-gesture-name");
+        const w = galaxyCanvas.width,
+          h = galaxyCanvas.height;
+        const cx = w / 2,
+          cy = h / 2;
+
+        if (type === "supernova") {
+          hudName.textContent = "💥 Supernova Wave!";
+          audioSynth.playExplosion();
+          particles.forEach((p) => {
+            const a = Math.random() * Math.PI * 2;
+            const s = Math.random() * 25 + 8;
+            p.vx = Math.cos(a) * s;
+            p.vy = Math.sin(a) * s;
+            p.hasTarget = false;
+          });
+          showToast("Supernova wave triggered!");
+        } else if (type === "blackhole") {
+          hudName.textContent = "🕳️ Gravitational Singularity";
+          audioSynth.playSingularity();
+          particles.forEach((p) => {
+            const dx = cx - p.x,
+              dy = cy - p.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            p.vx = (dx / dist) * 16 - (dy / dist) * 12;
+            p.vy = (dy / dist) * 16 + (dx / dist) * 12;
+            p.hasTarget = false;
+          });
+          showToast("Black Hole Singularity collapsed!");
+        } else if (type === "expand") {
+          hudName.textContent = "✨ Cosmic Wind Expansion";
+          audioSynth.playShimmer();
+          particles.forEach((p) => {
+            p.vx = (p.x - cx) * 0.08;
+            p.vy = (p.y - cy) * 0.08;
+            p.hasTarget = false;
+          });
+        } else if (type === "pinch") {
+          hudName.textContent = "🌟 Nebula Condensation";
+          audioSynth.playShimmer();
+          particles.forEach((p) => {
+            p.vx = (cx - p.x) * 0.05;
+            p.vy = (cy - p.y) * 0.05;
+            p.hasTarget = false;
+          });
+        }
+
+        setTimeout(() => {
+          if (State.activeGesture === type)
+            hudName.textContent = "Nebula Equilibrium";
+        }, 3500);
+      }
+
+      function changeParticlePalette(theme) {
+        State.particlesTheme = theme;
+        if (theme === "birth")
+          galaxyColorPalette = ["#00f5d4", "#9d4edd", "#ffd166", "#ffffff"];
+        else if (theme === "nebula")
+          galaxyColorPalette = ["#f72585", "#7209b7", "#3a0ca3", "#4cc9f0"];
+        else if (theme === "aurora")
+          galaxyColorPalette = ["#10b981", "#06b6d4", "#a7f3d0", "#ffffff"];
+        else if (theme === "supernova")
+          galaxyColorPalette = ["#ef4444", "#f59e0b", "#fbbf24", "#ffffff"];
+        particles.forEach(
+          (p) =>
+            (p.color =
+              galaxyColorPalette[
+                Math.floor(Math.random() * galaxyColorPalette.length)
+              ]),
+        );
+      }
+
+      function setGalaxyInputMode(mode) {
+        State.galaxyMode = mode;
+        document
+          .getElementById("btn-mode-mouse")
+          .classList.toggle("active", mode === "mouse");
+        document
+          .getElementById("btn-mode-camera")
+          .classList.toggle("active", mode === "camera");
+        const camBox = document.getElementById("camera-buttons-box");
+        if (mode === "camera") {
+          camBox.style.display = "block";
+          if (!State.cameraActive) toggleCamera();
+        } else {
+          camBox.style.display = "none";
+          stopCamera();
+        }
+      }
+
+      async function toggleCamera() {
+        if (State.cameraActive) stopCamera();
+        else await startCamera();
+      }
+
+      async function startCamera() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 320, height: 240 },
+            audio: false,
+          });
+          webcamVideo.srcObject = stream;
+          await webcamVideo.play();
+          State.cameraActive = true;
+          document.getElementById("camera-btn-text").textContent =
+            "Stop Camera";
+          showToast("Camera active: silhouette processed locally");
+        } catch (err) {
+          showToast("Camera not available. Using mouse mode.");
+          setGalaxyInputMode("mouse");
+        }
+      }
+
+      function stopCamera() {
+        if (webcamVideo.srcObject) {
+          webcamVideo.srcObject.getTracks().forEach((t) => t.stop());
+          webcamVideo.srcObject = null;
+        }
+        State.cameraActive = false;
+        const btnText = document.getElementById("camera-btn-text");
+        if (btnText) btnText.textContent = "Turn Camera On";
+      }
+
+      function processCameraSilhouette(w, h) {
+        if (!State.cameraActive || webcamVideo.readyState !== 4) return;
+        procCtx.drawImage(
+          webcamVideo,
+          0,
+          0,
+          procCanvas.width,
+          procCanvas.height,
+        );
+        const data = procCtx.getImageData(
+          0,
+          0,
+          procCanvas.width,
+          procCanvas.height,
+        ).data;
+        const pw = procCanvas.width,
+          ph = procCanvas.height;
+        const targets = [];
+        for (let y = 0; y < ph; y += 2) {
+          for (let x = 0; x < pw; x += 2) {
+            const idx = (y * pw + x) * 4;
+            const lum =
+              0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+            if (lum > 75) {
+              targets.push({ x: (1 - x / pw) * w, y: (y / ph) * h });
+            }
+          }
+        }
+        if (targets.length > 50) {
+          particles.forEach((p, i) => {
+            const t = targets[i % targets.length];
+            p.targetX = t.x;
+            p.targetY = t.y;
+            p.hasTarget = true;
+          });
+        }
+      }
+
+      galaxyCanvas.addEventListener("mousedown", () => {
+        mousePos.isDown = true;
+        triggerGesture("blackhole");
+      });
+      galaxyCanvas.addEventListener("mouseup", () => {
+        mousePos.isDown = false;
+      });
+      galaxyCanvas.addEventListener("mousemove", (e) => {
+        const rect = galaxyCanvas.getBoundingClientRect();
+        mousePos.x = e.clientX - rect.left;
+        mousePos.y = e.clientY - rect.top;
+        if (State.galaxyMode === "mouse") {
+          const dx = mousePos.x - mousePos.prevX;
+          const dy = mousePos.y - mousePos.prevY;
+          if (Math.hypot(dx, dy) > 45) triggerGesture("supernova");
+          particles.forEach((p) => {
+            if (Math.hypot(p.x - mousePos.x, p.y - mousePos.y) < 120) {
+              p.vx += dx * 0.12;
+              p.vy += dy * 0.12;
+            }
+          });
+          mousePos.prevX = mousePos.x;
+          mousePos.prevY = mousePos.y;
+        }
+      });
+
+      function animateGalaxy() {
+        const w = galaxyCanvas.width,
+          h = galaxyCanvas.height;
+        galaxyCtx.fillStyle = "rgba(2, 4, 10, 0.22)";
+        galaxyCtx.fillRect(0, 0, w, h);
+
+        if (State.galaxyMode === "camera" && State.cameraActive) {
+          processCameraSilhouette(w, h);
+        }
+
+        particles.forEach((p) => {
+          p.update(w, h);
+          p.draw(galaxyCtx);
+        });
+        requestAnimationFrame(animateGalaxy);
+      }
+
+      function captureGalaxyPhoto() {
+        const dataUrl = galaxyCanvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.download = `stardust-avatar-${State.name.toLowerCase()}.png`;
+        link.href = dataUrl;
+        link.click();
+        showToast("📸 Stardust avatar photo saved!");
+        renderShareCard();
+      }
+
+      let recordTimer = null;
+      function toggleClipRecording() {
+        const btn = document.getElementById("btn-record-clip");
+        const text = document.getElementById("record-btn-text");
+        if (State.mediaRecorder && State.mediaRecorder.state === "recording") {
+          State.mediaRecorder.stop();
+          return;
+        }
+        try {
+          const stream = galaxyCanvas.captureStream(30);
+          State.recordedChunks = [];
+          State.mediaRecorder = new MediaRecorder(stream, {
+            mimeType: "video/webm",
+          });
+          State.mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) State.recordedChunks.push(e.data);
+          };
+          State.mediaRecorder.onstop = () => {
+            const blob = new Blob(State.recordedChunks, { type: "video/webm" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `stardust-clip-${State.name.toLowerCase()}.webm`;
+            a.click();
+            btn.classList.remove("recording");
+            text.textContent = "🎥 Record 15s Video Clip";
+            showToast("🎥 Video clip downloaded!");
+            clearInterval(recordTimer);
+          };
+          State.mediaRecorder.start();
+          btn.classList.add("recording");
+          let cd = 15;
+          text.textContent = `Recording... (${cd}s)`;
+          recordTimer = setInterval(() => {
+            cd--;
+            if (cd > 0) text.textContent = `Recording... (${cd}s)`;
+            else {
+              clearInterval(recordTimer);
+              if (State.mediaRecorder.state === "recording")
+                State.mediaRecorder.stop();
+            }
+          }, 1000);
+        } catch (err) {
+          showToast("Video recording not supported on this device.");
+        }
+      }
+
+      /* 5. FRIEND MATCH (COSMIC SYNASTRY) */
+      function calculateFriendMatch() {
+        const d1 = State.birthDate;
+        const d2Val = document.getElementById("p2-date").value;
+        const p2Name = document.getElementById("p2-name").value || "Friend";
+        if (!d2Val) return;
+        const d2 = new Date(d2Val);
+
+        const p1Moon = getMoonPhase(d1);
+        const p2Moon = getMoonPhase(d2);
+        const daysDiff = Math.floor(Math.abs(d1 - d2) / 86400000);
+
+        document.getElementById("p1-res-name").textContent = State.name;
+        document.getElementById("p1-moon-avatar").textContent = p1Moon.emoji;
+        document.getElementById("p1-moon-desc").textContent =
+          `${p1Moon.name} (${p1Moon.illumination}%)`;
+
+        document.getElementById("p2-res-name").textContent = p2Name;
+        document.getElementById("p2-moon-avatar").textContent = p2Moon.emoji;
+        document.getElementById("p2-moon-desc").textContent =
+          `${p2Moon.name} (${p2Moon.illumination}%)`;
+
+        const p1Lum = parseFloat(p1Moon.illumination),
+          p2Lum = parseFloat(p2Moon.illumination);
+        let brighterText =
+          p1Lum > p2Lum
+            ? `${State.name}'s Sky (${p1Lum}% vs ${p2Lum}%)`
+            : `${p2Name}'s Sky (${p2Lum}% vs ${p1Lum}%)`;
+
+        const phaseDiff = Math.abs(p1Moon.fraction - p2Moon.fraction);
+        const score = Math.floor(
+          75 + (1 - Math.abs(Math.sin(phaseDiff * Math.PI))) * 23,
+        );
+
+        document.getElementById("match-score-num").textContent = `${score}%`;
+        document.getElementById("match-days-diff").textContent =
+          `${daysDiff.toLocaleString()} Days Apart on Earth`;
+        document.getElementById("match-brighter-sky").textContent =
+          brighterText;
+        document.getElementById("match-mars-diff").textContent =
+          `${(daysDiff / 686.97).toFixed(2)} Mars Years Apart`;
+        document.getElementById("match-synastry-desc").textContent =
+          "Harmonic Orbital Trine";
+
+        showToast(`Celestial match: ${score}% Resonance!`);
+        audioSynth.playShimmer();
+      }
+
+      /* 6. SHARE CARD GENERATOR & LINK */
+      function renderShareCard() {
+        const canvas = document.getElementById("share-card-canvas");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const w = canvas.width,
+          h = canvas.height;
+
+        ctx.fillStyle = "#030712";
+        ctx.fillRect(0, 0, w, h);
+
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, "rgba(157, 78, 221, 0.25)");
+        grad.addColorStop(0.5, "rgba(0, 245, 212, 0.15)");
+        grad.addColorStop(1, "rgba(247, 37, 133, 0.25)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = "rgba(255, 209, 102, 0.5)";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(24, 24, w - 48, h - 48);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 36px Cinzel";
+        ctx.textAlign = "center";
+        ctx.fillText("STARDUST PASSPORT", w / 2, 85);
+
+        ctx.fillStyle = "#00f5d4";
+        ctx.font = "14px Orbitron";
+        ctx.fillText(
+          "✦ BORN UNDER THE STARS • MADE OF THE STARS ✦",
+          w / 2,
+          115,
+        );
+
+        const skyRef = document.getElementById("sky-canvas");
+        if (skyRef) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(w / 2, 340, 180, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(skyRef, w / 2 - 180, 160, 360, 360);
+          ctx.restore();
+          ctx.strokeStyle = "#00f5d4";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(w / 2, 340, 180, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = "#ffd166";
+        ctx.font = "bold 32px Cinzel";
+        ctx.fillText(State.name.toUpperCase(), w / 2, 570);
+
+        const bDateStr = State.birthDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        ctx.fillStyle = "#cbd5e1";
+        ctx.font = '16px "Plus Jakarta Sans"';
+        ctx.fillText(`Born ${bDateStr} • ${State.cityName}`, w / 2, 605);
+
+        const now = new Date();
+        const diffMs = now - State.birthDate;
+        const earthYears = diffMs / (86400000 * 365.2422);
+
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "12px Orbitron";
+        ctx.fillText("MARS AGE", w / 4, 680);
+        ctx.fillStyle = "#00f5d4";
+        ctx.font = "bold 24px Orbitron";
+        ctx.fillText(`${(earthYears / 1.8808).toFixed(1)} YRS`, w / 4, 715);
+
+        const moon = getMoonPhase(State.birthDate);
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "12px Orbitron";
+        ctx.fillText("MOON PHASE", w / 2, 680);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 20px Cinzel";
+        ctx.fillText(moon.name, w / 2, 715);
+
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "12px Orbitron";
+        ctx.fillText("HEARTBEATS", (w * 3) / 4, 680);
+        ctx.fillStyle = "#f72585";
+        ctx.font = "bold 22px Orbitron";
+        ctx.fillText(
+          `${Math.floor(((diffMs / 1000) * 1.25) / 1000000)}M ♥`,
+          (w * 3) / 4,
+          715,
+        );
+
+        ctx.fillStyle = "#64748b";
+        ctx.font = "11px Orbitron";
+        ctx.fillText(
+          "VERIFIED ASTROMETRIC CALCULATION • STARDUST EPHEMERIS",
+          w / 2,
+          930,
+        );
+      }
+
+      function downloadShareCard() {
+        const canvas = document.getElementById("share-card-canvas");
+        const link = document.createElement("a");
+        link.download = `stardust-card-${State.name.toLowerCase()}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        showToast("📥 Cosmic card downloaded!");
+      }
+
+      function updateShareLink() {
+        const url = new URL(window.location.href);
+        url.searchParams.set("name", State.name);
+        url.searchParams.set(
+          "bday",
+          State.birthDate.toISOString().split("T")[0],
+        );
+        url.searchParams.set("lat", State.latitude.toFixed(4));
+        url.searchParams.set("lon", State.longitude.toFixed(4));
+        url.searchParams.set("city", State.cityName);
+        document.getElementById("share-link-input").value = url.toString();
+      }
+
+      function copyShareLink() {
+        const input = document.getElementById("share-link-input");
+        input.select();
+        navigator.clipboard
+          .writeText(input.value)
+          .then(() => showToast("✨ Cosmic Link copied!"));
+      }
+
+      /* 7. CELESTIAL RAIL SCROLL NAVIGATION */
+      function scrollToSection(id) {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }
+
+      const railMeteor = document.getElementById("rail-meteor");
+      const railNodes = document.querySelectorAll(".rail-node");
+      const sections = [
+        "hero",
+        "birth-sky",
+        "galaxy",
+        "friend-match",
+        "share-card",
+      ];
+
+      railNodes.forEach((node) => {
+        node.addEventListener("click", () =>
+          scrollToSection(node.getAttribute("data-section")),
+        );
+      });
+
+      window.addEventListener("scroll", () => {
+        const scrollY = window.scrollY;
+        const docHeight =
+          document.documentElement.scrollHeight - window.innerHeight;
+        const progress = Math.max(0, Math.min(1, scrollY / (docHeight || 1)));
+
+        if (railMeteor) {
+          const rail = document.getElementById("celestial-rail");
+          railMeteor.style.top = `${progress * (rail.clientHeight - 30)}px`;
+        }
+
+        sections.forEach((secId) => {
+          const el = document.getElementById(secId);
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            if (
+              rect.top <= window.innerHeight * 0.4 &&
+              rect.bottom >= window.innerHeight * 0.2
+            ) {
+              railNodes.forEach((node) =>
+                node.classList.toggle(
+                  "active",
+                  node.getAttribute("data-section") === secId,
+                ),
+              );
+            }
+          }
+        });
+      });
+
+      /* 8. AMBIENT BACKGROUND STARS */
+      const bgCanvas = document.getElementById("space-dust-canvas");
+      const bgCtx = bgCanvas.getContext("2d");
+      const bgStars = [];
+
+      function initBgStars() {
+        bgCanvas.width = window.innerWidth;
+        bgCanvas.height = window.innerHeight;
+        bgStars.length = 0;
+        for (let i = 0; i < 240; i++) {
+          bgStars.push({
+            x: Math.random() * bgCanvas.width,
+            y: Math.random() * bgCanvas.height,
+            size: Math.random() * 1.6 + 0.4,
+            speed: Math.random() * 0.2 + 0.05,
+            twinkle: Math.random() * Math.PI * 2,
+          });
+        }
+      }
+
+      function animateBg() {
+        bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+        const now = Date.now() * 0.002;
+        bgCtx.fillStyle = "#ffffff";
+        bgStars.forEach((s) => {
+          s.y -= s.speed;
+          if (s.y < 0) s.y = bgCanvas.height;
+          bgCtx.globalAlpha = 0.3 + 0.7 * Math.abs(Math.sin(now + s.twinkle));
+          bgCtx.beginPath();
+          bgCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+          bgCtx.fill();
+        });
+        bgCtx.globalAlpha = 1.0;
+        requestAnimationFrame(animateBg);
+      }
+
+      /* 9. CONTROLLER & INIT */
+      function generateCosmicSky() {
+        const name = document.getElementById("user-name").value || "Stargazer";
+        const dateVal = document.getElementById("birth-date").value;
+        const timeVal = document.getElementById("birth-time").value || "22:30";
+        const citySelect = document.getElementById("birth-city");
+
+        if (!dateVal) return;
+        State.name = name;
+        State.birthDate = new Date(`${dateVal}T${timeVal}:00`);
+
+        if (citySelect.value === "custom") {
+          const coords = prompt(
+            "Enter Latitude, Longitude:",
+            "37.7749,-122.4194",
+          );
+          if (coords) {
+            const parts = coords.split(",").map(Number);
+            State.latitude = parts[0];
+            State.longitude = parts[1];
+            State.cityName = "Custom GPS";
+          }
+        } else {
+          const [lat, lon] = citySelect.value.split(",").map(Number);
+          State.latitude = lat;
+          State.longitude = lon;
+          State.cityName = citySelect.options[citySelect.selectedIndex].text;
+        }
+
+        const [th, tm] = timeVal.split(":").map(Number);
+        State.scrubMinutes = th * 60 + tm;
+        document.getElementById("time-scrubber").value = State.scrubMinutes;
+        document.getElementById("scrubber-time-display").textContent =
+          `${timeVal} Local Time`;
+
+        document.getElementById("p1-name").value = State.name;
+        document.getElementById("p1-date").value = dateVal;
+
+        updateCosmicMetrics();
+        renderSkyDome();
+        renderShareCard();
+        updateShareLink();
+        calculateFriendMatch();
+
+        scrollToSection("birth-sky");
+        showToast("✨ Celestial vault mapped to your birth night!");
+        audioSynth.playShimmer();
+      }
+
+      function showToast(message) {
+        const toast = document.getElementById("cosmic-toast");
+        document.getElementById("toast-message").textContent = message;
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 3500);
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        initBgStars();
+        animateBg();
+        initGalaxyParticles();
+        animateGalaxy();
+        updateCosmicMetrics();
+        renderSkyDome();
+        renderShareCard();
+        updateShareLink();
+        calculateFriendMatch();
+      });
+
+      window.addEventListener("resize", () => {
+        resizeGalaxyCanvas();
+        renderSkyDome();
+        renderShareCard();
+      });
+    </script>
+  </body>
+</html>
